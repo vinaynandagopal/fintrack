@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+instance/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Flask
+.env
+.flaskenv
+
+# MySQL / database dumps
+*.sql.gz
+*.dump
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Docker
+.docker/
