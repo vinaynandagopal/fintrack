@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Dashboard - FinTrack</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/styles.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="dashboard.html">FinTrack</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link active" href="dashboard.html">Dashboard</a>
+                <a class="nav-link" href="transactions.html">Transactions</a>
+                <a class="nav-link" href="budgets.html">Budgets</a>
+                <a class="nav-link" href="savings.html">Savings</a>
+                <button class="btn btn-light btn-sm ms-2" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container py-4">
+        <h1 class="h3 mb-4">Dashboard</h1>
+
+        <div id="alertBox"></div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <p class="text-muted mb-1">Total income</p>
+                        <h2 class="h4" id="totalIncome">$0.00</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <p class="text-muted mb-1">Total expenses</p>
+                        <h2 class="h4" id="totalExpense">$0.00</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <p class="text-muted mb-1">Savings</p>
+                        <h2 class="h4" id="savings">$0.00</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card page-card">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Expenses by category</h2>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categoryTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script>
+        requireAuth();
+
+        function money(value) {
+            return `$${Number(value).toFixed(2)}`;
+        }
+
+        async function loadDashboard() {
+            const alertBox = document.getElementById("alertBox");
+
+            try {
+                const response = await apiRequest("/dashboard/summary");
+                const data = response.data;
+
+                document.getElementById("totalIncome").textContent = money(data.total_income);
+                document.getElementById("totalExpense").textContent = money(data.total_expense);
+                document.getElementById("savings").textContent = money(data.savings);
+
+                const rows = data.category_expenses.map(item => `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td>${money(item.total)}</td>
+                    </tr>
+                `).join("");
+
+                document.getElementById("categoryTable").innerHTML = rows || `
+                    <tr>
+                        <td colspan="2" class="text-muted">No expense data yet.</td>
+                    </tr>
+                `;
+            } catch (error) {
+                alertBox.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+            }
+        }
+
+        loadDashboard();
+    </script>
+</body>
+</html>

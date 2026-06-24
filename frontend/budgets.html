@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Budgets - FinTrack</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/styles.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="dashboard.html">FinTrack</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="dashboard.html">Dashboard</a>
+                <a class="nav-link" href="transactions.html">Transactions</a>
+                <a class="nav-link active" href="budgets.html">Budgets</a>
+                <a class="nav-link" href="savings.html">Savings</a>
+                <button class="btn btn-light btn-sm ms-2" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container py-4">
+        <h1 class="h3 mb-4">Budgets</h1>
+
+        <div id="alertBox"></div>
+
+        <div class="card page-card mb-4">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Set monthly budget</h2>
+
+                <form id="budgetForm" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label" for="category">Expense category</label>
+                        <select class="form-select" id="category" required></select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label" for="monthYear">Month</label>
+                        <input class="form-control" id="monthYear" type="month" required>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label" for="amount">Budget amount</label>
+                        <input class="form-control" id="amount" type="number" min="0.01" step="0.01" required>
+                    </div>
+
+                    <div class="col-12">
+                        <button class="btn btn-primary" type="submit">Save budget</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card page-card">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Saved budgets</h2>
+
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Month</th>
+                                <th>Category</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="budgetTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script>
+        requireAuth();
+
+        function money(value) {
+            return `$${Number(value).toFixed(2)}`;
+        }
+
+        async function loadExpenseCategories() {
+            const response = await apiRequest("/categories");
+
+            document.getElementById("category").innerHTML = response.data
+                .filter(category => category.type === "expense")
+                .map(category => `<option value="${category.id}">${category.name}</option>`)
+                .join("");
+        }
+
+        async function loadBudgets() {
+            const response = await apiRequest("/budgets");
+
+            const rows = response.data.map(item => `
+                <tr>
+                    <td>${item.month_year}</td>
+                    <td>${item.category_name}</td>
+                    <td>${money(item.amount)}</td>
+                </tr>
+            `).join("");
+
+            document.getElementById("budgetTable").innerHTML = rows || `
+                <tr>
+                    <td colspan="3" class="text-muted">No budgets yet.</td>
+                </tr>
+            `;
+        }
+
+        document.getElementById("budgetForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            await apiRequest("/budgets", {
+                method: "POST",
+                body: JSON.stringify({
+                    category_id: document.getElementById("category").value,
+                    month_year: document.getElementById("monthYear").value,
+                    amount: document.getElementById("amount").value
+                })
+            });
+
+            event.target.reset();
+            await loadBudgets();
+        });
+
+        loadExpenseCategories()
+            .then(loadBudgets)
+            .catch(error => {
+                document.getElementById("alertBox").innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+            });
+    </script>
+</body>
+</html>

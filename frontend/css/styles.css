@@ -1,0 +1,51 @@
+:root {
+    --fintrack-primary: #1266f1;
+    --fintrack-dark: #1f2937;
+    --fintrack-muted: #6b7280;
+    --fintrack-bg: #f4f7fb;
+}
+
+body {
+    background: var(--fintrack-bg);
+    color: var(--fintrack-dark);
+}
+
+.auth-wrapper {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+}
+
+.auth-card {
+    max-width: 460px;
+    margin: auto;
+}
+
+.navbar-brand {
+    font-weight: 700;
+}
+
+.stat-card {
+    border: 0;
+    border-radius: 8px;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+}
+
+.page-card {
+    border: 0;
+    border-radius: 8px;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+}
+
+.table td,
+.table th {
+    vertical-align: middle;
+}
+
+.badge-income {
+    background: #198754;
+}
+
+.badge-expense {
+    background: #dc3545;
+}

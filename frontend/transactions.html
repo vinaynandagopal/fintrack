@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Transactions - FinTrack</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/styles.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="dashboard.html">FinTrack</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="dashboard.html">Dashboard</a>
+                <a class="nav-link active" href="transactions.html">Transactions</a>
+                <a class="nav-link" href="budgets.html">Budgets</a>
+                <a class="nav-link" href="savings.html">Savings</a>
+                <button class="btn btn-light btn-sm ms-2" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container py-4">
+        <h1 class="h3 mb-4">Transactions</h1>
+
+        <div id="alertBox"></div>
+
+        <div class="card page-card mb-4">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Add transaction</h2>
+
+                <form id="transactionForm" class="row g-3">
+                    <div class="col-md-2">
+                        <label class="form-label" for="type">Type</label>
+                        <select class="form-select" id="type" required>
+                            <option value="income">Income</option>
+                            <option value="expense">Expense</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label" for="category">Category</label>
+                        <select class="form-select" id="category" required></select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label" for="amount">Amount</label>
+                        <input class="form-control" id="amount" type="number" step="0.01" min="0.01" required>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label" for="description">Description</label>
+                        <input class="form-control" id="description" type="text">
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label" for="transactionDate">Date</label>
+                        <input class="form-control" id="transactionDate" type="date" required>
+                    </div>
+
+                    <div class="col-12">
+                        <button class="btn btn-primary" type="submit">Save transaction</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card page-card">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Transaction history</h2>
+
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Category</th>
+                                <th>Description</th>
+                                <th>Amount</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactionTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script>
+        requireAuth();
+
+        let categories = [];
+
+        function money(value) {
+            return `$${Number(value).toFixed(2)}`;
+        }
+
+        function filterCategories() {
+            const type = document.getElementById("type").value;
+            const categorySelect = document.getElementById("category");
+
+            categorySelect.innerHTML = categories
+                .filter(category => category.type === type)
+                .map(category => `<option value="${category.id}">${category.name}</option>`)
+                .join("");
+        }
+
+        async function loadCategories() {
+            const response = await apiRequest("/categories");
+            categories = response.data;
+            filterCategories();
+        }
+
+        async function loadTransactions() {
+            const response = await apiRequest("/transactions");
+
+            const rows = response.data.map(item => `
+                <tr>
+                    <td>${item.transaction_date}</td>
+                    <td><span class="badge ${item.type === "income" ? "badge-income" : "badge-expense"}">${item.type}</span></td>
+                    <td>${item.category_name}</td>
+                    <td>${item.description || ""}</td>
+                    <td>${money(item.amount)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteTransaction(${item.id})">Delete</button>
+                    </td>
+                </tr>
+            `).join("");
+
+            document.getElementById("transactionTable").innerHTML = rows || `
+                <tr>
+                    <td colspan="6" class="text-muted">No transactions yet.</td>
+                </tr>
+            `;
+        }
+
+        async function deleteTransaction(id) {
+            if (!confirm("Delete this transaction?")) {
+                return;
+            }
+
+            await apiRequest(`/transactions/${id}`, { method: "DELETE" });
+            await loadTransactions();
+        }
+
+        document.getElementById("type").addEventListener("change", filterCategories);
+
+        document.getElementById("transactionForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            await apiRequest("/transactions", {
+                method: "POST",
+                body: JSON.stringify({
+                    type: document.getElementById("type").value,
+                    category_id: document.getElementById("category").value,
+                    amount: document.getElementById("amount").value,
+                    description: document.getElementById("description").value,
+                    transaction_date: document.getElementById("transactionDate").value
+                })
+            });
+
+            event.target.reset();
+            document.getElementById("transactionDate").valueAsDate = new Date();
+            filterCategories();
+            await loadTransactions();
+        });
+
+        document.getElementById("transactionDate").valueAsDate = new Date();
+
+        loadCategories()
+            .then(loadTransactions)
+            .catch(error => {
+                document.getElementById("alertBox").innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+            });
+    </script>
+</body>
+</html>
